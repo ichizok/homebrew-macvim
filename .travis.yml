@@ -12,9 +12,11 @@ sudo: false
 
 env:
   - VIMCMD=/usr/local/Cellar/macvim/HEAD-*/MacVim.app/Contents/MacOS/Vim
+    HOMEBREW_NO_AUTO_UPDATE=1
 
 script:
   - brew update || brew update
+  - brew audit --strict --except=specs macvim.rb
   - brew tap macvim-dev/macvim
   - brew install ruby
   - brew install --HEAD macvim-dev/macvim/macvim || true
