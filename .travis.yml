@@ -17,9 +17,9 @@ env:
 script:
   - brew update || brew update
   - brew audit --strict --except=specs macvim.rb
-  - brew tap macvim-dev/macvim
+  - brew tap ichizok/macvim
   - brew install ruby
-  - brew install --HEAD macvim-dev/macvim/macvim || true
+  - brew install --HEAD ichizok/macvim/macvim || true
   - rm -f result; $VIMCMD -g -f -c "redir>result" -c "lua print(\"Test\")" -c "redir END" -c q; cat result; echo; grep -q -w Test result
   - rm -f result; $VIMCMD -g -f -c "redir>result" -c "perl VIM::Msg(\"Test\")" -c "redir END" -c q; cat result; echo; grep -q -w Test result
   - rm -f result; $VIMCMD -g -f -c "redir>result" -c "py print(\"Test\")" -c "redir END" -c q; cat result; echo; grep -q -w Test result
