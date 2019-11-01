@@ -1,31 +1,23 @@
 class Macvim < Formula
-  desc "GUI for vim, made for macOS"
+  desc "GUI for Vim, made for macOS"
   homepage "https://github.com/macvim-dev/macvim"
   head "https://github.com/macvim-dev/macvim.git"
 
-  option "with-properly-linked-python2-python3", "Link with properly linked Python 2 and Python 3. You will get deadly signal SEGV if you don't have properly linked Python 2 and Python 3."
+  option "with-properly-linked-python2-python3", "Link with properly linked Python 2 and Python 3. You will get deadly signal SEGV if you don't have them."
 
   depends_on "gettext" => :build
   depends_on "lua" => :build
-  depends_on "python3" => :build
-
-  def get_path(name)
-    f = Formulary.factory(name)
-    if f.rack.directory?
-      kegs = f.rack.subdirs.map { |keg| Keg.new(keg) }.sort_by(&:version)
-      return kegs.last.to_s unless kegs.empty?
-    end
-    nil
-  end
+  depends_on "python" => :build
 
   def install
-    perl_version = "5.16"
+    perl_version = Utils.popen_read("/usr/bin/perl", "-e", "print $^V")[/^v(\d+\.\d+)/, 1]
+    python_version = Language::Python.major_minor_version "python3"
     ENV.append "VERSIONER_PERL_VERSION", perl_version
     ENV.append "VERSIONER_PYTHON_VERSION", "2.7"
-    ENV.append "vi_cv_path_python3", "#{HOMEBREW_PREFIX}/bin/python3"
-    ENV.append "vi_cv_path_plain_lua", "#{HOMEBREW_PREFIX}/bin/lua"
+    ENV.append "vi_cv_path_python3", Formula["python"].opt_bin/"python3"
+    ENV.append "vi_cv_path_plain_lua", Formula["lua"].opt_bin/"lua"
     ENV.append "vi_cv_dll_name_perl", "/System/Library/Perl/#{perl_version}/darwin-thread-multi-2level/CORE/libperl.dylib"
-    ENV.append "vi_cv_dll_name_python3", "#{HOMEBREW_PREFIX}/Frameworks/Python.framework/Versions/3.7/Python"
+    ENV.append "vi_cv_dll_name_python3", Formula["python"].opt_frameworks/"Python.framework/Versions/#{python_version}/Python"
 
     opts = []
     if build.with? "properly-linked-python2-python3"
@@ -45,24 +37,23 @@ class Macvim < Formula
                           "--enable-python3interp=dynamic",
                           "--enable-rubyinterp=dynamic",
                           "--enable-luainterp=dynamic",
-                          "--with-lua-prefix=#{HOMEBREW_PREFIX}",
+                          "--with-lua-prefix=#{Formula["lua"].opt_prefix}",
                           *opts
 
     system "make"
 
-    apppath = "src/MacVim/build/Release/MacVim.app"
+    app_path = "src/MacVim/build/Release/MacVim.app"
 
-    instance_variable_set("@gettext", get_path("gettext"))
+    gettext_bindir = Formula["gettext"].opt_bin
     system "make", "-C", "src/po", "install",
-                   "PATH=#{@gettext}/bin:#{ENV["PATH"]}",
-                   "MSGFMT=#{@gettext}/bin/msgfmt",
+                   "PATH=#{gettext_bindir}:#{ENV["PATH"]}",
+                   "MSGFMT=#{gettext_bindir}/msgfmt",
                    "INSTALL_DATA=install",
                    "FILEMOD=644",
-                   "LOCALEDIR=../../#{apppath}/Contents/Resources/vim/runtime/lang"
+                   "LOCALEDIR=../../#{app_path}/Contents/Resources/vim/runtime/lang"
 
-    prefix.install apppath
+    prefix.install app_path
 
-    bin = prefix + "bin"
     mkdir_p bin
 
     %w[
